@@ -1,1 +1,4 @@
-Automation process example: download webpage, extract data, save file
+Automation process example: web_extract
+download webpage
+extract data
+save file
