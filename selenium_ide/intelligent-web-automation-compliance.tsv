@@ -1,0 +1,63 @@
+Stage	Business Task Name	Technical Task Name	Script	E	F	G	H	I	J	K	L	M	N	O	P
+0	automation_with_selenium_ide		do_nothing												
+1			param_set	p=p_dbhost	value=../env/p_dbhost.txt										
+2			param_set	p=p_dbport	value=../env/p_dbport.txt										
+3			param_set	p=p_dbname	value=../env/p_dbname.txt										
+4			param_set	p=p_dbusername	value=../env/p_dbusername.txt										
+5			param_set	p=p_dbpassword	value=../env/p_dbpassword.txt										
+6			param_set	p=p_gpt_token	value=../env/p_gpt_token.txt										
+7			param_set	p=p_desktop_url	value=../env/p_desktop_url.txt										
+8		Set up your webdriver	param_set	p=p_browser_webdriver	value=../env/p_browser_webdriver.txt										
+9		Set up your browser IP	param_set	p=p_browser_ip	value=../env/p_browser_ip.txt										
+10		Set up your browser port	param_set	p=p_browser_port	value=../env/p_browser_port.txt										
+11	Determine the number of the act on the page	increment index by 1 (starting index is set to 0)	run_command	runcommand=echo $((|||p_index|||+1)) > |||dirtemp|||requestid|||_p_index.txt											
+12		get p_index	param_set	p=p_index	value=|||requestid|||_p_index.txt										
+13	Open EU official journal page		selenium_ide	webbrowser=|||p_browser_ip|||:|||p_browser_port|||	runcommand=open	target=|||page_url|||	value=	capturedata=no	webdriver=|||p_browser_webdriver|||						
+14	Open latest legislation acts	click the first link in the table	selenium_ide	webbrowser=|||p_browser_ip|||:|||p_browser_port|||	runcommand=click	target=xpath=//table//tr/td[2]/a	value=	capturedata=no	webdriver=|||p_browser_webdriver|||						
+15	Check if there is any more acts	check if there is any act by index	selenium_ide	webbrowser=|||p_browser_ip|||:|||p_browser_port|||	runcommand=store xpath count	target=xpath=(//div[@id='env_I']//a)[|||p_index|||]	value=p_temp	capturedata=value	webdriver=|||p_browser_webdriver|||						
+16			param_set	p=p_temp	value=|||requestid|||_p_temp.txt										
+17	If there are no more acts, stop the process		param_if	p=p_temp	sign=is	value=0	action=cancel	stages=18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42							
+18	Get the URL of the act	get URL of the act using index	selenium_ide	webbrowser=|||p_browser_ip|||:|||p_browser_port|||	runcommand=store attribute	target=xpath=(//div[@id='env_I']//a)[|||p_index|||]@href	value=p_act_url	capturedata=value	webdriver=|||p_browser_webdriver|||						
+19		get p_act_url	param_set	p=p_act_url	value=|||requestid|||_p_act_url.txt										
+20	Check if the act is already in the database	check if the URL is already in the database	mysql_export	header=	query=SELECT id FROM legislation_acts WHERE url=\"|||p_act_url|||\"	filename=|||requestid|||_p_temp.txt	dbhost=|||p_dbhost|||	dbport=|||p_dbport|||	dbname=|||p_dbname|||	dbusername=|||p_dbusername|||	dbpassword=|||p_dbpassword|||				
+21			param_set	p=p_temp	value=|||requestid|||_p_temp.txt										
+22	If the act is already in database, move to the next act		param_if	p=p_temp	sign=isnot	value=	action=cancel	stages=23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40							
+23	Open the act page	click on the act link using index	selenium_ide	webbrowser=|||p_browser_ip|||:|||p_browser_port|||	runcommand=click	target=xpath=(//div[@id='env_I']//a)[|||p_index|||]	value=	capturedata=no	webdriver=|||p_browser_webdriver|||						
+24	Check if English version of the act is available	use xpath count to check whether English version link is present	selenium_ide	webbrowser=|||p_browser_ip|||:|||p_browser_port|||	runcommand=store xpath count	target=xpath=//a[@id='format_language_table_HTML_EN']	value=p_temp	capturedata=value	webdriver=|||p_browser_webdriver|||						
+25			param_set	p=p_temp	value=|||requestid|||_p_temp.txt										
+26	If English version is available, store the act text		param_if	p=p_temp	sign=isnot	value=0	action=cancel	stages=27,28							
+27	If English version if not available - save to database without summary, and move to next act		param_if	p=p_temp	sign=is	value=0	action=cancel	stages=29,30,31,32,33,34,35,36,37,38,39,40							
+28	Save to database without summary		mysql_query	query=INSERT INTO legislation_acts (url, summary) VALUES (\"|||p_act_url|||\", \"English version is not available\")	dbhost=|||p_dbhost|||	dbport=|||p_dbport|||	dbname=|||p_dbname|||	dbusername=|||p_dbusername|||	dbpassword=|||p_dbpassword|||						
+29	Open HTML version of the act	click on the HTML link	selenium_ide	webbrowser=|||p_browser_ip|||:|||p_browser_port|||	runcommand=click	target=xpath=//a[@id='format_language_table_HTML_EN']	value=	capturedata=no	webdriver=|||p_browser_webdriver|||						
+30	Store the legislation act text	export text of the HTML	selenium_ide	webbrowser=|||p_browser_ip|||:|||p_browser_port|||	runcommand=store text	target=xpath=//div[@id='docHtml']	value=p_act_text	capturedata=value	webdriver=|||p_browser_webdriver|||						
+31		escape special characters	run_command	runcommand=sed -i -e 's/\r\n/ /g' -e 's/\r//g' -e 's/\"/\\\\\\"/g' -e 's/\\\\|/\\\|/g' |||dirtemp|||requestid|||_p_act_text.txt											
+32			run_command	runcommand=sed -i -e ':a;N;$!ba;s/\n/\\\\\\n/g' |||dirtemp|||requestid|||_p_act_text.txt											
+33		get p_act_text	param_set	p=p_act_text	value=|||requestid|||_p_act_text.txt										
+34	Use OpenAI GPT to generate a short summary of the legislation act		openai_chat	api_key=|||p_gpt_token|||	model=gpt-4-1106-preview	filename=|||requestid|||_p_summary.txt	assistant_prompt=	user_prompt=|||p_act_text|||	system_prompt=|||p_instructions|||	capturedata=	body=	temperature=|||p_temperature|||	n_top=|||p_n_top|||		
+35		escape special characters	file_text_convert	file=|||requestid|||_p_summary.txt	convert=unescapejava										
+36		escape special characters	file_text_convert	file=|||requestid|||_p_summary.txt	convert=escapexsi										
+37		escape special characters	run_command	runcommand=sed -i -e 's/\\r//g' -e 's/"/\\\\"/g' |||dirtemp|||requestid|||_p_summary.txt											
+38			run_command	runcommand=sed -i -e ':a;N;$!ba;s/\n/\\\\n/g' |||dirtemp|||requestid|||_p_summary.txt											
+39		get p_summary	param_set	p=p_summary	value=|||requestid|||_p_summary.txt										
+40	Save act URL and summary to the database		mysql_query	query=INSERT INTO legislation_acts (url, summary) VALUES (\"|||p_act_url|||\", \"|||p_summary|||\")	dbhost=|||p_dbhost|||	dbport=|||p_dbport|||	dbname=|||p_dbname|||	dbusername=|||p_dbusername|||	dbpassword=|||p_dbpassword|||						
+41	Launch the process again to save the next legislation act on the page	rerun the process with current index passed	http_request	uri=|||p_desktop_url|||&arg1=--context_param%20cmd=request&arg2=--context_param%20task=automation_with_selenium_ide&arg3=--context_param%20p_index=|||p_index|||&arg4=--context_param%20mode=process	filename=|||requestid|||_temp.txt										
+42	END		file_delete	file_dir=	filemask=|||requestid|||_temp.txt										
+															
+p	p_index	0													
+p	p_dbhost	env													
+p	p_dbport	env													
+p	p_dbname	env													
+p	p_dbusername	env													
+p	p_dbpassword	env													
+p	p_gpt_token	env													
+p	p_desktop_url	env													
+p	p_browser_webdriver	env													
+p	p_browser_ip	env													
+p	p_browser_port	env													
+p	p_instructions	You read a legislation act given by user. Make a short summary of the legislation act (no more than 1000 characters).													
+p	p_temperature	0.75													
+p	p_n_top	0.5													
+p	page_url	https://eur-lex.europa.eu/oj/direct-access.html													
+p	p_act_url														
+p	p_temp														
+p	p_summary														
