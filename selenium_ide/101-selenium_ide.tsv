@@ -1,1 +1,21 @@
-
+Stage	Business Task Name	Technical Task Name	Script						
+0	getting_data		do_nothing						
+1	Set up your webdriver		param_set	p=p_browser_webdriver	value=../env/p_browser_webdriver.txt				
+2	Set up your browser IP		param_set	p=p_browser_ip	value=../env/p_browser_ip.txt				
+3	Set up your browser port		param_set	p=p_browser_port	value=../env/p_browser_port.txt				
+4	Open https://www.biami.dev/ page		selenium_ide	webbrowser=|||p_browser_ip|||:|||p_browser_port|||	runcommand=open	target=https://www.biami.dev/	value=	capturedata=	webdriver=|||p_browser_webdriver|||
+5	Click on "Learn" button		selenium_ide	webbrowser=|||p_browser_ip|||:|||p_browser_port|||	runcommand=click	target=xpath=//a[@title='Learn']	value=	capturedata=	webdriver=|||p_browser_webdriver|||
+6	Click on "Setup" button		selenium_ide	webbrowser=|||p_browser_ip|||:|||p_browser_port|||	runcommand=click	target=xpath=//a[@title='Setup']	value=	capturedata=	webdriver=|||p_browser_webdriver|||
+7	Store the text of "DIY Automation Setup" heading on the page		selenium_ide	webbrowser=|||p_browser_ip|||:|||p_browser_port|||	runcommand=store text	target=xpath=//div[@class='wpb_wrapper']/h1	value=p_heading	capturedata=value	webdriver=|||p_browser_webdriver|||
+8	Assign exported text to a parameter to use it later		param_set	p=p_heading	value=|||requestid|||_p_heading.txt				
+9	Store the URL of "Download BIAMI Dev" link on the page		selenium_ide	webbrowser=|||p_browser_ip|||:|||p_browser_port|||	runcommand=store attribute	target=xpath=//a[contains(.,'Download BIAMI Dev')]@href	value=p_url	capturedata=value	webdriver=|||p_browser_webdriver|||
+10	Assign exported URL to a parameter to use it later		param_set	p=p_url	value=|||requestid|||_p_url.txt				
+11	Store the whole article inner HTML to parse it later		selenium_ide	webbrowser=|||p_browser_ip|||:|||p_browser_port|||	runcommand=store innerhtml	target=xpath=//article[@role='main']	value=p_html	capturedata=value	webdriver=|||p_browser_webdriver|||
+									
+									
+p	p_browser_webdriver	env							
+p	p_browser_ip	env							
+p	p_browser_port	env							
+p	p_heading	process							
+p	p_url	process							
+p	p_html	process							
